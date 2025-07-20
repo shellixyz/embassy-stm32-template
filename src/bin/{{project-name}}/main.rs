@@ -4,6 +4,7 @@
 #![allow(static_mut_refs)]
 #![allow(dead_code)]
 #![allow(unused_imports)]
+#![warn(clippy::pedantic)]
 
 use core::sync::atomic::AtomicBool;
 

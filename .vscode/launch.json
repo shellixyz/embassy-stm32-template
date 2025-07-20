@@ -1,0 +1,61 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "target/{{rust_target}}/debug/{{project-name}}",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "interface": "swd",
+            "configFiles": [
+                "interface/stlink.cfg",
+                "target/{{chip_family}}.cfg",
+            ],
+            "openOCDLaunchCommands": [
+                "reset_config none separate"
+            ],
+        },
+		{
+			"type": "probe-rs-debug",
+			"request": "launch",
+			"name": "debug through probe_rs",
+			"cwd": "${workspaceFolder}",
+			//!MODIFY (or remove)
+			//!"speed": 24000,
+			//!MODIFY (or remove)
+			// "probe": "0483:3748:35C3BF7006304E4B3037062443",
+			"runtimeExecutable": "probe-rs",
+			"runtimeArgs": ["dap-server"],
+			//!MODIFY
+			"chip": "{{chip}}",
+			"flashingConfig": {
+				"flashingEnabled": true,
+				"haltAfterReset": false,
+				"formatOptions": {
+					//!MODIFY (or remove). Valid values are: 'bin', 'hex', 'elf'(default), 'idf'
+					// "format": "elf"
+				}
+			},
+			"coreConfigs": [
+				{
+					"coreIndex": 0,
+					//!MODIFY
+					"programBinary": "target/{{rust_target}}/debug/{{project-name}}",
+					//!MODIFY
+					//!"svdFile": "target/thumbv7m-none-eabi/debug/ground_test",
+					"rttEnabled": true,
+				}
+			],
+			"env": {
+				//!MODIFY (or remove)
+				// If you set this variable, check the VSCode console log window for the location of the log file.
+				"RUST_LOG": "info",
+				"DEFMT_LOG": "info",
+			},
+			// Info, Debug
+			"consoleLogLevel": "Console"
+		},
+    ]
+}

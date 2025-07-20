@@ -1,0 +1,13 @@
+[template]
+cargo_generate_version = ">=0.17.4"
+ignore = [".git", "lib/embassy"]
+
+[hooks]
+pre = ["pre-script.rhai"]
+
+[placeholders.chip]
+type = "string"
+prompt = "Which MCU to target?"
+# TODO: Auto-generate the extended list (i.e. from stm32-data)
+choices = ["STM32G474RETx", "STM32F405RGTx", "STM32F415RGTx"]
+#default = "rp2040"

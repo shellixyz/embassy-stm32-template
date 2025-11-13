@@ -20,14 +20,14 @@ cortex-m-rt = "0.7.0"
 stm32-metapac = { version = "16.0.0", features = ["{{embassy_chip_feature}}"] }
 panic-probe = "1.0.0"
 
-getset = "0.1.5"
+getset = { git = "ssh://git@github.com/shellixyz/getset.git" }
 
 switch-hal = "0.4.0"
 embedded-hal = "1.0.0"
 embedded-hal-async = "1.0.0"
 embedded-io = "0.6.1"
 embedded-io-async = "0.6.1"
-embedded-io-extras = { version = "0.0.2", default-features = false } # Cursor
+embedded-io-cursor = { git = "ssh://git@github.com/shellixyz/embedded-io-cursor.git" }
 
 #heapless = "0.8.0"
 strum_macros = "0.27.1"
@@ -43,7 +43,7 @@ postcard = "1.1.2"
 default = ["defmt"]
 defmt = [
     "embassy-stm32/defmt", "embassy-sync/defmt", "embassy-executor/defmt", "embassy-time/defmt", "panic-probe/print-defmt",
-    "stm32-metapac/defmt", "embedded-io-async/defmt-03", "embedded-io-extras/defmt-03", "embedded-hal/defmt-03",
+    "stm32-metapac/defmt", "embedded-io-async/defmt-03", "embedded-io-cursor/defmt", "embedded-hal/defmt-03",
     "embedded-hal-async/defmt-03", "postcard/defmt",
 ]
 swd = []

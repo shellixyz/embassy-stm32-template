@@ -1,11 +1,8 @@
-#[macro_use]
-mod set_pins_as_output;
-
 use defmt::Format;
 use embassy_stm32::{
 	bind_interrupts,
 	gpio::{self},
-	peripherals, usb,
+	peripherals, set_pins_as_output, usb,
 	wdg::IndependentWatchdog,
 };
 use embassy_time::Duration;

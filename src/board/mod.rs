@@ -44,7 +44,7 @@ pub struct Peripherals {
 
 fn set_clock_config(config: &mut embassy_stm32::Config) {
 	use embassy_stm32::rcc::*;
-	// CLOCK_CONFIG_PLACEHOLDER
+	{{clock_config}}
 }
 
 pub const DEFAULT_CONFIG: Config = Config {};

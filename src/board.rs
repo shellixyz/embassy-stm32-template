@@ -89,8 +89,8 @@ fn set_clock_config(config: &mut embassy_stm32::Config) {
 		mode: HseMode::Oscillator,
 	});
 	config.rcc.sys = Sysclk::PLL1_P;
+	config.rcc.pll_src = PllSource::HSE;
 	config.rcc.pll = Some(Pll {
-		source: PllSource::HSE,
 		prediv: PllPreDiv::DIV4,
 		mul: PllMul::MUL168,
 		divp: Some(PllPDiv::DIV2),

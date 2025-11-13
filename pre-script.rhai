@@ -1,15 +1,15 @@
 let targets = #{
-    STM32G474RETx: #{
+    STM32G474RETx (16MHz HSE): #{
         rust_target: "thumbv7m-none-eabi",
         chip_family: "stm32g4x",
         embassy_chip_feature: "stm32g474re",
     },
-    STM32F405RGTx: #{
+    STM32F405RGTx (8MHz HSE): #{
         rust_target: "thumbv7m-none-eabi",
         chip_family: "stm32f4x",
         embassy_chip_feature: "stm32f405rg",
     },
-    STM32F415RGTx: #{
+    STM32F415RGTx (8MHz HSE): #{
         rust_target: "thumbv7m-none-eabi",
         chip_family: "stm32f4x",
         embassy_chip_feature: "stm32f415rg",

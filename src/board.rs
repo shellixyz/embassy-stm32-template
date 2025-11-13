@@ -101,7 +101,7 @@ fn set_clock_config(config: &mut embassy_stm32::Config) {
 	config.rcc.apb1_pre = APBPrescaler::DIV4;
 	config.rcc.apb2_pre = APBPrescaler::DIV2;
 	config.rcc.ls = LsConfig::off();
-	{%- endif -%}
+	{%- endif %}
 }
 
 pub const DEFAULT_CONFIG: Config = Config {};

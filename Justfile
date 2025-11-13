@@ -2,14 +2,14 @@ default:
     @echo No receipe specified
 
 size:
-    cargo size --release --bin {{project-name}}
+    DEFMT_LOG=info cargo size --release --bin {{project-name}}
 
 build:
-    cargo build --release --bin {{project-name}}
+    DEFMT_LOG=info cargo build --release --bin {{project-name}}
     mkdir -p bin && ln -sf ../target/{{rust_target}}/release/{{project-name}} bin/{{project-name}}
 
 build-swd:
-    cargo build --release --features swd --bin {{project-name}}
+    DEFMT_LOG=info cargo build --release --features swd --bin {{project-name}}
     mkdir -p bin && ln -sf ../target/{{rust_target}}/release/{{project-name}} bin/{{project-name}}
 
 run: build-swd
@@ -19,7 +19,7 @@ build-bin: build
     arm-none-eabi-objcopy -O binary bin/{{project-name}}{,.bin}
 
 flash:
-    cargo flash --release --chip {{chip}} --features swd --bin {{project-name}}
+    DEFMT_LOG=info cargo flash --release --chip {{chip}} --features swd --bin {{project-name}}
 
 dfu-flash: build-bin
 	dfu-util -a 0 -s 0x08000000:leave -D bin/{{project-name}}.bin

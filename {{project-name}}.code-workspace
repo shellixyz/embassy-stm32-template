@@ -12,14 +12,14 @@
             "editor.formatOnSave": true
         },
         // if project not configured to use nightly toolchain but nightly rustfmt is needed
-      	"rust-analyzer.check.overrideCommand": [
-			"cargo",
-			"+nightly",
-			"clippy",
-			"--message-format=json",
-			"--all-targets",
-			"--all-features"
-		],
+      	// "rust-analyzer.check.overrideCommand": [
+		//    "cargo",
+		//	"+nightly",
+		//	"clippy",
+		//	"--message-format=json",
+		//	"--all-targets",
+		//	"--all-features"
+		// ],
         "cSpell.words": [
         ],
         "rust-analyzer.cargo.noDefaultFeatures": false,

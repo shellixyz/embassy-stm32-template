@@ -80,10 +80,6 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 
 	let p = embassy_stm32::init(stm32_config);
 
-	let wdg = watchdog_timeout.map(|wdgt| IndependentWatchdog::new(p.IWDG, u32::try_from(wdgt.as_micros()).unwrap()));
-
-	let (usb, cdc_acm) = init_usb(p.USB, p.PA11, p.PA12);
-
 	// #[rustfmt::skip]
 	// set_pins_as_output!(
 	// 	p,
@@ -92,6 +88,10 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 
 	#[cfg(not(feature = "swd"))]
 	set_pins_as_output!(p, PA13, PA14);
+
+	let wdg = watchdog_timeout.map(|wdgt| IndependentWatchdog::new(p.IWDG, u32::try_from(wdgt.as_micros()).unwrap()));
+
+	let (usb, cdc_acm) = init_usb(p.USB, p.PA11, p.PA12);
 
 	Peripherals { usb, cdc_acm, wdg }
 }

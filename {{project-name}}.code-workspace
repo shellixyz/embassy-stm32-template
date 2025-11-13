@@ -1,21 +1,31 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {
-		"rust-analyzer.check.allTargets": false,
-		"rust-analyzer.cargo.target": "{{rust_target}}",
-		"[rust]": {
-			"editor.defaultFormatter": "rust-lang.rust-analyzer",
-			"editor.formatOnSave": true
-		},
-		"cSpell.words": [
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "rust-analyzer.check.allTargets": false,
+        "rust-analyzer.cargo.target": "thumbv7m-none-eabi",
+        "[rust]": {
+            "editor.defaultFormatter": "rust-lang.rust-analyzer",
+            "editor.formatOnSave": true
+        },
+        // if project not configured to use nightly toolchain but nightly rustfmt is needed
+      	"rust-analyzer.check.overrideCommand": [
+			"cargo",
+			"+nightly",
+			"clippy",
+			"--message-format=json",
+			"--all-targets",
+			"--all-features"
 		],
-		"rust-analyzer.cargo.features": [
-		],
-		"rust-analyzer.showUnlinkedFileNotification": false,
-		"rust-analyzer.check.command": "clippy"
-	},
+        "cSpell.words": [
+        ],
+        "rust-analyzer.cargo.noDefaultFeatures": false,
+		"rust-analyzer.cargo.features": "all",
+		// "rust-analyzer.cargo.features": [
+		// ],
+        "rust-analyzer.showUnlinkedFileNotification": false
+    },
 }

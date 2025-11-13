@@ -9,7 +9,7 @@ embassy-sync = { git = "https://github.com/shellixyz/embassy.git", branch = "tem
 embassy-executor = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start", features = ["arch-cortex-m", "executor-thread", "defmt", "integrated-timers", "nightly"] }
 embassy-time = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start", features = ["defmt", "defmt-timestamp-uptime", "tick-hz-80_000_000"] }
 embassy-time-queue-driver = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start" }
-embassy-usb = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start" }
+embassy-usb = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start", optional = true }
 embassy-futures = "0.1.1"
 
 defmt = "1.0.1"
@@ -40,13 +40,14 @@ serde = { version = "1.0.219", default-features = false, features = ["derive"] }
 postcard = "1.1.2"
 
 [features]
-default = ["defmt"]
+default = ["swd", "usb"]
 defmt = [
     "embassy-stm32/defmt", "embassy-sync/defmt", "embassy-executor/defmt", "embassy-time/defmt", "panic-probe/print-defmt",
     "stm32-metapac/defmt", "embedded-io-async/defmt-03", "embedded-io-cursor/defmt", "embedded-hal/defmt-03",
     "embedded-hal-async/defmt-03", "postcard/defmt",
 ]
-swd = []
+swd = ["defmt"]
+usb = ["dep:embassy-usb"]
 
 [profile.release]
 debug = 2

@@ -1,9 +1,12 @@
+use cfg_if::cfg_if;
 use defmt::Format;
+#[cfg(feature = "usb")]
+use embassy_stm32::usb;
 use embassy_stm32::{
 	bind_interrupts,
 	gpio::{self},
 	peripherals, set_pins_as_output,
-	time::Hertz, usb,
+	time::Hertz,
 	wdg::IndependentWatchdog,
 };
 use embassy_time::Duration;
@@ -16,6 +19,7 @@ pub type ActiveHighSwitch<'a> = Switch<'a, switch_hal::ActiveHigh>;
 pub type Input<'a, P> = switch_hal::Switch<gpio::Input<'a>, P>;
 pub type ActiveHighInput<'a> = Input<'a, switch_hal::ActiveHigh>;
 
+#[cfg(feature = "usb")]
 bind_interrupts!(struct Irqs {
 {% if usb_type == "USB_LP" -%}
 	USB_LP => usb::InterruptHandler<peripherals::USB>;
@@ -27,33 +31,39 @@ bind_interrupts!(struct Irqs {
 pub type Flash<'a> = embassy_stm32::flash::Flash<'a, embassy_stm32::flash::Blocking>;
 pub type WDG = IndependentWatchdog<'static, peripherals::IWDG>;
 
+cfg_if! {
+	if #[cfg(feature = "usb")] {
 {% if usb_type == "USB_LP" -%}
-pub type UsbDriver = usb::Driver<'static, peripherals::USB>;
-pub type UsbPeripheral = peripherals::USB;
+		pub type UsbDriver = usb::Driver<'static, peripherals::USB>;
+		pub type UsbPeripheral = peripherals::USB;
 {%- elsif usb_type == "OTG_FS" -%}
-pub type UsbDriver = usb::Driver<'static, peripherals::USB_OTG_FS>;
-pub type UsbPeripheral = peripherals::USB_OTG_FS;
+		pub type UsbDriver = usb::Driver<'static, peripherals::USB_OTG_FS>;
+		pub type UsbPeripheral = peripherals::USB_OTG_FS;
 {%- endif %}
-pub type UsbDevice = embassy_usb::UsbDevice<'static, UsbDriver>;
-pub type CdcAcmClass = embassy_usb::class::cdc_acm::CdcAcmClass<'static, UsbDriver>;
-pub type CdcAcmSender = embassy_usb::class::cdc_acm::Sender<'static, UsbDriver>;
-pub type CdcAcmReceiver = embassy_usb::class::cdc_acm::Receiver<'static, UsbDriver>;
+		pub type UsbDevice = embassy_usb::UsbDevice<'static, UsbDriver>;
+		pub type CdcAcmClass = embassy_usb::class::cdc_acm::CdcAcmClass<'static, UsbDriver>;
+		pub type CdcAcmSender = embassy_usb::class::cdc_acm::Sender<'static, UsbDriver>;
+		pub type CdcAcmReceiver = embassy_usb::class::cdc_acm::Receiver<'static, UsbDriver>;
 
-static CDC_ACM_STATE: StaticCell<embassy_usb::class::cdc_acm::State> = StaticCell::new();
-static USB_CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
-static USB_BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
-static USB_CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
+		static CDC_ACM_STATE: StaticCell<embassy_usb::class::cdc_acm::State> = StaticCell::new();
+		static USB_CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+		static USB_BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+		static USB_CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
 {%- if usb_type == "OTG_FS" -%}
-static USB_EP_OUT_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
+		static USB_EP_OUT_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
 {%- endif %}
+	}
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, CopyGetters, Format)]
 pub struct Config {}
 
 pub struct Peripherals {
-	pub usb: UsbDevice,
-	pub cdc_acm: CdcAcmClass,
 	pub wdg: Option<WDG>,
+	#[cfg(feature = "usb")]
+	pub cdc_acm: CdcAcmClass,
+	#[cfg(feature = "usb")]
+	pub usb: UsbDevice,
 }
 
 fn set_clock_config(config: &mut embassy_stm32::Config) {
@@ -127,15 +137,23 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 
 	let wdg = watchdog_timeout.map(|wdgt| IndependentWatchdog::new(p.IWDG, u32::try_from(wdgt.as_micros()).unwrap()));
 
+	#[cfg(feature = "usb")]
 {% if usb_type == "USB_LP" -%}
 	let (usb, cdc_acm) = init_usb(p.USB, p.PA11, p.PA12);
 {%- elsif usb_type == "OTG_FS" -%}
 	let (usb, cdc_acm) = init_usb(p.USB_OTG_FS, p.PA11, p.PA12);
 {%- endif %}
 
-	Peripherals { usb, cdc_acm, wdg }
+	Peripherals {
+		wdg,
+		#[cfg(feature = "usb")]
+		cdc_acm,
+		#[cfg(feature = "usb")]
+		usb,
+	}
 }
 
+#[cfg(feature = "usb")]
 fn init_usb(usb: UsbPeripheral, pa11: peripherals::PA11, pa12: peripherals::PA12) -> (UsbDevice, CdcAcmClass) {
 {% if usb_type == "USB_LP" -%}
 	let driver = embassy_stm32::usb::Driver::new(usb, Irqs, pa12, pa11);
@@ -175,18 +193,4 @@ fn init_usb(usb: UsbPeripheral, pa11: peripherals::PA11, pa12: peripherals::PA12
 
 	let usb = builder.build();
 	(usb, class)
-}
-
-impl Peripherals {
-	pub fn unleash_dog(&mut self) {
-		if let Some(wdg) = self.wdg.as_mut() {
-			wdg.unleash();
-		}
-	}
-
-	pub fn pet_dog(&mut self) {
-		if let Some(wdg) = self.wdg.as_mut() {
-			wdg.pet();
-		}
-	}
 }

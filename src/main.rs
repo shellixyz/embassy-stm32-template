@@ -11,8 +11,10 @@
 
 mod board;
 
+{%- if usb_support == "true" %}
 #[cfg(feature = "usb")]
 mod usb;
+{%- endif %}
 
 include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
@@ -31,12 +33,15 @@ pub type ChannelSender<T, const N: usize> = channel::Sender<'static, CriticalSec
 
 pub const CONFIG: board::Config = board::Config {};
 
+{%- if usb_support == "true" %}
 static DO_RESET: AtomicBool = AtomicBool::new(false);
+{%- endif %}
 
 struct RuntimeData {
 	// Add fields as needed
 }
 
+{%- if usb_support == "true" %}
 #[cfg(feature = "usb")]
 fn handle_messages_from_usb(
 	tuner_to_firmware_rx: &usb::RxChannelRx,
@@ -65,6 +70,7 @@ fn handle_messages_from_usb(
 		}
 	}
 }
+{%- endif %}
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -74,6 +80,7 @@ async fn main(spawner: Spawner) {
 		// Initialize fields as needed
 	};
 
+{%- if usb_support == "true" %}
 	#[cfg(feature = "usb")]
 	let (firmware_to_connected_device_rx, firmware_to_connected_device_tx) = usb::tx_channel_endpoints();
 	#[cfg(feature = "usb")]
@@ -89,6 +96,7 @@ async fn main(spawner: Spawner) {
 	}
 
 	Timer::after_secs(2).await;
+{%- endif %}
 
 	if let Some(wdg) = &mut p.wdg {
 		wdg.unleash()
@@ -101,6 +109,7 @@ async fn main(spawner: Spawner) {
 			wdg.pet();
 		}
 
+{%- if usb_support == "true" %}
 		if DO_RESET.load(core::sync::atomic::Ordering::SeqCst) {
 			defmt::info!("Resetting device");
 			Timer::after_millis(100).await; // Give time for the USB driver to finish sending any pending data
@@ -113,6 +122,7 @@ async fn main(spawner: Spawner) {
 			&firmware_to_connected_device_tx,
 			&mut runtime_data,
 		);
+{%- endif %}
 
 		defmt::info!("Hello from main loop");
 		Timer::after_millis(500).await;

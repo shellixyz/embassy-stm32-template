@@ -11,3 +11,11 @@ prompt = "Which MCU to target?"
 # TODO: Auto-generate the extended list (i.e. from stm32-data)
 choices = ["STM32G474RETx (16MHz HSE)", "STM32F405RGTx (8MHz HSE)", "STM32F415RGTx (8MHz HSE)"]
 #default = "rp2040"
+
+[placeholders.usb_support]
+type = "bool"
+prompt = "Include USB support?"
+default = false
+
+[conditional.'usb_support == false']
+ignore = ["src/usb"]

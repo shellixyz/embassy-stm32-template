@@ -9,7 +9,9 @@ embassy-sync = { git = "https://github.com/shellixyz/embassy.git", branch = "tem
 embassy-executor = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start", features = ["arch-cortex-m", "executor-thread", "defmt", "integrated-timers", "nightly"] }
 embassy-time = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start", features = ["defmt", "defmt-timestamp-uptime", "tick-hz-80_000_000"] }
 embassy-time-queue-driver = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start" }
+{%- if usb_support == "true" %}
 embassy-usb = { git = "https://github.com/shellixyz/embassy.git", branch = "template-start", optional = true }
+{%- endif %}
 embassy-futures = "0.1.1"
 
 defmt = "1.0.1"
@@ -40,14 +42,20 @@ serde = { version = "1.0.219", default-features = false, features = ["derive"], 
 postcard = { version = "1.1.2", optional = true }
 
 [features]
+{% if usb_support == "true" -%}
 default = ["swd", "usb"]
+{%- else -%}
+default = ["swd"]
+{%- endif %}
 defmt = [
     "embassy-stm32/defmt", "embassy-sync/defmt", "embassy-executor/defmt", "embassy-time/defmt", "panic-probe/print-defmt",
     "stm32-metapac/defmt", "embedded-io-async/defmt-03", "embedded-io-cursor/defmt", "embedded-hal/defmt-03",
     "embedded-hal-async/defmt-03", "postcard/defmt",
 ]
 swd = ["defmt"]
+{%- if usb_support == "true" %}
 usb = ["dep:embassy-usb", "dep:serde", "dep:postcard"]
+{%- endif %}
 
 [profile.release]
 debug = 2

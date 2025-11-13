@@ -1,6 +1,6 @@
 [template]
 cargo_generate_version = ">=0.17.4"
-ignore = [".git", "lib/embassy"]
+ignore = [".git", "lib/embassy", "clock_config"]
 
 [hooks]
 pre = ["pre-script.rhai"]

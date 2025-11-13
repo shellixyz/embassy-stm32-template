@@ -19,3 +19,14 @@ default = false
 
 [conditional.'usb_support == false']
 ignore = ["src/usb"]
+
+[placeholders.enable_watchdog]
+type = "bool"
+prompt = "Enable watchdog?"
+default = false
+
+[conditional.'enable_watchdog == true'.placeholders.watchdog_duration]
+type = "string"
+prompt = "Watchdog timeout duration in milliseconds?"
+default = "1000"
+

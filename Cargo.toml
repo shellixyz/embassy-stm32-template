@@ -44,9 +44,9 @@ postcard = { version = "1.1.2", optional = true }
 
 [features]
 {% if usb_support == "true" -%}
-default = ["swd", "usb"]
+default = ["swd", "no-reset-on-panic", "usb"]
 {%- else -%}
-default = ["swd"]
+default = ["swd", "no-reset-on-panic"]
 {%- endif %}
 defmt = [
     "dep:defmt", "dep:defmt-rtt", "dep:panic-probe",
@@ -55,6 +55,8 @@ defmt = [
     "embedded-hal-async/defmt-03", "postcard/defmt",
 ]
 swd = ["defmt"]
+no-reset-on-panic = []
+panic-debug = ["no-reset-on-panic"]
 {%- if usb_support == "true" %}
 usb = ["dep:embassy-usb", "dep:serde", "dep:postcard"]
 {%- endif %}

@@ -15,16 +15,13 @@ mod log_macros;
 #[cfg(feature = "usb")]
 mod usb;
 {% endif %}
+use cfg_if::cfg_if;
 #[cfg(feature = "defmt")]
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_futures::yield_now;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel};
 use embassy_time::{Duration, Timer};
-#[cfg(not(feature = "defmt"))]
-use panic_halt as _;
-#[cfg(feature = "defmt")]
-use panic_probe as _;
 
 pub type Channel<T, const N: usize> = channel::Channel<CriticalSectionRawMutex, T, N>;
 pub type ChannelReceiver<T, const N: usize> = channel::Receiver<'static, CriticalSectionRawMutex, T, N>;
@@ -96,3 +93,43 @@ async fn main(spawner: Spawner) {
 		Timer::after_millis(500).await;
 	}
 }
+
+cfg_if!(
+	if #[cfg(not(feature = "no-reset-on-panic"))] {
+		#[unsafe(no_mangle)]
+		#[cfg_attr(target_os = "none", unsafe(link_section = ".HardFault.user"))]
+		unsafe extern "C" fn HardFault(_ef: &cortex_m_rt::ExceptionFrame) {
+			cortex_m::peripheral::SCB::sys_reset();
+		}
+
+		#[cortex_m_rt::exception]
+		unsafe fn DefaultHandler(_: i16) -> ! {
+			const SCB_ICSR: *const u32 = 0xE000_ED04 as *const u32;
+			let irqn = unsafe { core::ptr::read_volatile(SCB_ICSR) } as u8 as i16 - 16;
+
+			panic!("DefaultHandler #{:?}", irqn);
+		}
+
+		#[panic_handler]
+		fn panic(_info: &core::panic::PanicInfo) -> ! {
+			cortex_m::asm::udf();
+		}
+	} else if #[cfg(feature = "panic-debug")] {
+		#[unsafe(no_mangle)]
+		#[cfg_attr(target_os = "none", unsafe(link_section = ".HardFault.user"))]
+		unsafe extern "C" fn HardFault(_ef: &cortex_m_rt::ExceptionFrame) {
+			#[allow(clippy::empty_loop)]
+			loop {}
+		}
+
+		#[panic_handler]
+		fn panic(_info: &core::panic::PanicInfo) -> ! {
+			cortex_m::interrupt::disable();
+			loop {}
+		}
+	} else if #[cfg(feature = "defmt")] {
+		use panic_probe as _;
+	} else {
+		use panic_halt as _;
+	}
+);

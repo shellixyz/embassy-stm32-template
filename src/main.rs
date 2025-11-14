@@ -62,11 +62,11 @@ async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut 
 {% endif %}
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-{%- if enable_watchdog %}
+{% if enable_watchdog %}
 	let mut p = board::init(CONFIG, Some(Duration::from_millis({{ watchdog_duration }}))).await;
-{%- else %}
+{% else %}
 	let mut p = board::init(CONFIG, None).await;
-{%- endif %}
+{% endif %}
 
 	let mut runtime_data = RuntimeData {
 		// Initialize fields as needed

@@ -10,12 +10,12 @@
 #![allow(unused_mut)]
 
 mod board;
+mod log_macros;
 {% if usb_support == "true" %}
 #[cfg(feature = "usb")]
 mod usb;
 {% endif %}
-use core::sync::atomic::{self, AtomicBool};
-
+#[cfg(feature = "defmt")]
 use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_futures::yield_now;
@@ -38,7 +38,7 @@ struct RuntimeData {
 #[cfg(feature = "usb")]
 async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut RuntimeData) {
 	if let Ok(message) = usb_channel.try_receive() {
-		defmt::info!("USB: got message: {:?}", message);
+		info!("USB: got message: {:?}", message);
 		use usb::messages::{Incoming as IncomingMessage, Outgoing as OutgoingMessage};
 		let response = match message {
 			IncomingMessage::Reset => {
@@ -49,12 +49,12 @@ async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut 
 			},
 		};
 		if let Err(e) = usb_channel.try_send(response) {
-			defmt::error!("USB: failed to send response: {:?}", e);
+			error!("USB: failed to send response: {:?}", e);
 		}
 	}
 
 	if usb::is_requesting_reset() {
-		defmt::info!("Resetting device");
+		info!("Resetting device");
 		Timer::after_millis(100).await; // Give time for the USB driver to finish sending any pending data
 		cortex_m::peripheral::SCB::sys_reset();
 	}
@@ -89,7 +89,7 @@ async fn main(spawner: Spawner) {
 		#[cfg(feature = "usb")]
 		handle_message_from_usb(&usb_channel, &mut runtime_data).await;
 {% endif %}
-		defmt::info!("Hello from main loop");
+		info!("Hello from main loop");
 		Timer::after_millis(500).await;
 	}
 }

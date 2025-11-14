@@ -11,7 +11,7 @@
 
 mod board;
 mod log_macros;
-{% if usb_support == "true" %}
+{% if usb_support %}
 #[cfg(feature = "usb")]
 mod usb;
 {% endif %}
@@ -34,7 +34,7 @@ include!(concat!(env!("OUT_DIR"), "/version.rs"));
 struct RuntimeData {
 	// Add fields as needed
 }
-{% if usb_support == "true" %}
+{% if usb_support %}
 #[cfg(feature = "usb")]
 async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut RuntimeData) {
 	if let Ok(message) = usb_channel.try_receive() {
@@ -62,7 +62,7 @@ async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut 
 {% endif %}
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-{%- if enable_watchdog == "true" %}
+{%- if enable_watchdog %}
 	let mut p = board::init(CONFIG, Some(Duration::from_millis({{ watchdog_duration }}))).await;
 {%- else %}
 	let mut p = board::init(CONFIG, None).await;
@@ -71,7 +71,7 @@ async fn main(spawner: Spawner) {
 	let mut runtime_data = RuntimeData {
 		// Initialize fields as needed
 	};
-{% if usb_support == "true" %}
+{% if usb_support %}
 	#[cfg(feature = "usb")]
 	let usb_channel = usb::spawn_tasks(&spawner, p.usb, p.cdc_acm);
 {% endif %}
@@ -85,7 +85,7 @@ async fn main(spawner: Spawner) {
 		if let Some(wdg) = &mut p.wdg {
 			wdg.pet();
 		}
-{% if usb_support == "true" %}
+{% if usb_support %}
 		#[cfg(feature = "usb")]
 		handle_message_from_usb(&usb_channel, &mut runtime_data).await;
 {% endif %}

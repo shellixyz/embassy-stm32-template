@@ -8,6 +8,8 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
+
+mod board;
 {% if usb_support == "true" %}
 #[cfg(feature = "usb")]
 mod usb;

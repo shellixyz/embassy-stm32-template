@@ -22,6 +22,7 @@ pub type ActiveHighInput<'a> = Input<'a, switch_hal::ActiveHigh>;
 
 pub type Flash<'a> = embassy_stm32::flash::Flash<'a, embassy_stm32::flash::Blocking>;
 pub type WDG = IndependentWatchdog<'static, peripherals::IWDG>;
+
 {% if usb_support %}
 #[cfg(feature = "usb")]
 bind_interrupts!(struct Irqs {
@@ -55,6 +56,7 @@ cfg_if! {
 {% endif %}
 	}
 }
+
 {% endif %}
 #[derive(Debug, Clone, Copy, PartialEq, CopyGetters)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -140,6 +142,7 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 	set_pins_as_output!(p, PA13, PA14);
 
 	let wdg = watchdog_timeout.map(|wdgt| IndependentWatchdog::new(p.IWDG, u32::try_from(wdgt.as_micros()).unwrap()));
+
 {% if usb_support %}
 	#[cfg(feature = "usb")]
 {% if usb_type == "USB_LP" %}
@@ -147,6 +150,7 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 {% elif usb_type == "OTG_FS" %}
 	let (usb, cdc_acm) = init_usb(p.USB_OTG_FS, p.PA11, p.PA12);
 {% endif %}
+
 {% endif %}
 	Peripherals {
 		wdg,
@@ -158,6 +162,7 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 {% endif %}
 	}
 }
+
 {% if usb_support %}
 #[cfg(feature = "usb")]
 fn init_usb(usb: UsbPeripheral, pa11: peripherals::PA11, pa12: peripherals::PA12) -> (UsbDevice, CdcAcmClass) {

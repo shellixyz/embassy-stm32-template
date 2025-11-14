@@ -15,6 +15,7 @@ mod log_macros;
 #[cfg(feature = "usb")]
 mod usb;
 {% endif %}
+
 use cfg_if::cfg_if;
 #[cfg(feature = "defmt")]
 use defmt_rtt as _;
@@ -34,6 +35,7 @@ include!(concat!(env!("OUT_DIR"), "/version.rs"));
 struct RuntimeData {
 	// Add fields as needed
 }
+
 {% if usb_support %}
 #[cfg(feature = "usb")]
 async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut RuntimeData) {
@@ -59,6 +61,7 @@ async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut 
 		cortex_m::peripheral::SCB::sys_reset();
 	}
 }
+
 {% endif %}
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -71,9 +74,11 @@ async fn main(spawner: Spawner) {
 	let mut runtime_data = RuntimeData {
 		// Initialize fields as needed
 	};
+
 {% if usb_support %}
 	#[cfg(feature = "usb")]
 	let usb_channel = usb::spawn_tasks(&spawner, p.usb, p.cdc_acm);
+
 {% endif %}
 	if let Some(wdg) = &mut p.wdg {
 		wdg.unleash()
@@ -85,9 +90,11 @@ async fn main(spawner: Spawner) {
 		if let Some(wdg) = &mut p.wdg {
 			wdg.pet();
 		}
+
 {% if usb_support %}
 		#[cfg(feature = "usb")]
 		handle_message_from_usb(&usb_channel, &mut runtime_data).await;
+
 {% endif %}
 		info!("Hello from main loop");
 		Timer::after_millis(500).await;

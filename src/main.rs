@@ -24,7 +24,7 @@ use defmt_rtt as _;
 use embassy_executor::Spawner;
 use embassy_futures::yield_now;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel};
-use embassy_time::Timer;
+use embassy_time::{Duration, Timer};
 use panic_probe as _;
 
 pub type Channel<T, const N: usize> = channel::Channel<CriticalSectionRawMutex, T, N>;

@@ -5,7 +5,7 @@ ignore = [".git", "lib/embassy"]
 [hooks]
 pre = ["pre-script.rhai"]
 
-[placeholders.chip]
+[placeholders.mcu_target]
 type = "string"
 prompt = "Which MCU to target?"
 # TODO: Auto-generate the extended list (i.e. from stm32-data)

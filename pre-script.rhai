@@ -1,6 +1,7 @@
 
-let targets = #{
+let mcu_targets = #{
     "STM32G474RETx (16MHz HSE)": #{
+        chip: "STM32G474RETx",
         rust_target: "thumbv7m-none-eabi",
         chip_family: "stm32g4x",
         embassy_chip_feature: "stm32g474re",
@@ -8,6 +9,7 @@ let targets = #{
         usb_type: "USB_LP"
     },
     "STM32F405RGTx (8MHz HSE)": #{
+        chip: "STM32F405RGTx",
         rust_target: "thumbv7m-none-eabi",
         chip_family: "stm32f4x",
         embassy_chip_feature: "stm32f405rg",
@@ -15,6 +17,7 @@ let targets = #{
         usb_type: "OTG_FS"
     },
     "STM32F415RGTx (8MHz HSE)": #{
+        chip: "STM32F415RGTx",
         rust_target: "thumbv7m-none-eabi",
         chip_family: "stm32f4x",
         embassy_chip_feature: "stm32f415rg",
@@ -23,9 +26,9 @@ let targets = #{
     },
 };
 
-let target = variable::get("chip");
+let mcu_target = variable::get("mcu_target");
 
-let target_properties = targets.get(target);
+let target_properties = mcu_targets.get(mcu_target);
 for key in target_properties.keys() {
     variable::set(key, target_properties.get(key));
 }

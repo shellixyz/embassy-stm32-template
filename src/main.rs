@@ -69,10 +69,10 @@ async fn main(spawner: Spawner) {
 	let mut runtime_data = RuntimeData {
 		// Initialize fields as needed
 	};
-	{% if usb_support == "true" %}
+{% if usb_support == "true" %}
 	#[cfg(feature = "usb")]
 	let usb_channel = usb::spawn_tasks(&spawner, p.usb, p.cdc_acm);
-	{% endif %}
+{% endif %}
 	if let Some(wdg) = &mut p.wdg {
 		wdg.unleash()
 	}
@@ -83,10 +83,10 @@ async fn main(spawner: Spawner) {
 		if let Some(wdg) = &mut p.wdg {
 			wdg.pet();
 		}
-		{% if usb_support == "true" %}
+{% if usb_support == "true" %}
 		#[cfg(feature = "usb")]
 		handle_message_from_usb(&usb_channel, &mut runtime_data).await;
-		{% endif %}
+{% endif %}
 		defmt::info!("Hello from main loop");
 		Timer::after_millis(500).await;
 	}

@@ -4,7 +4,7 @@
         {
             "name": "debug",
             "cwd": "${workspaceRoot}",
-            "executable": "target/{{rust_target}}/debug/{{project-name}}",
+            "executable": "target/{{rust_target}}/debug/{{project_name}}",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
@@ -42,7 +42,7 @@
 				{
 					"coreIndex": 0,
 					//!MODIFY
-					"programBinary": "target/{{rust_target}}/debug/{{project-name}}",
+					"programBinary": "target/{{rust_target}}/debug/{{project_name}}",
 					//!MODIFY
 					//!"svdFile": "target/thumbv7m-none-eabi/debug/ground_test",
 					"rttEnabled": true,

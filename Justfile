@@ -2,30 +2,30 @@ default:
     @echo No receipe specified
 
 size:
-    DEFMT_LOG=info cargo size --release --bin {{project-name}}
+    DEFMT_LOG=info cargo size --release --bin {{project_name}}
 
 build:
-    DEFMT_LOG=info cargo build --release --bin {{project-name}}
-    mkdir -p bin && ln -sf ../target/{{rust_target}}/release/{{project-name}} bin/{{project-name}}
+    DEFMT_LOG=info cargo build --release --bin {{project_name}}
+    mkdir -p bin && ln -sf ../target/{{rust_target}}/release/{{project_name}} bin/{{project_name}}
 
 build-swd:
-    DEFMT_LOG=info cargo build --release --features swd --bin {{project-name}}
-    mkdir -p bin && ln -sf ../target/{{rust_target}}/release/{{project-name}} bin/{{project-name}}
+    DEFMT_LOG=info cargo build --release --features swd --bin {{project_name}}
+    mkdir -p bin && ln -sf ../target/{{rust_target}}/release/{{project_name}} bin/{{project_name}}
 
 run: build-swd
-    probe-rs run --chip {{chip}} bin/{{project-name}}
+    probe-rs run --chip {{chip}} bin/{{project_name}}
 
 build-bin: build
-    arm-none-eabi-objcopy -O binary bin/{{project-name}}{,.bin}
+    arm-none-eabi-objcopy -O binary bin/{{project_name}}{,.bin}
 
 flash:
-    DEFMT_LOG=info cargo flash --release --chip {{chip}} --features swd --bin {{project-name}}
+    DEFMT_LOG=info cargo flash --release --chip {{chip}} --features swd --bin {{project_name}}
 
 dfu-flash: build-bin
-	dfu-util -a 0 -s 0x08000000:leave -D bin/{{project-name}}.bin
+	dfu-util -a 0 -s 0x08000000:leave -D bin/{{project_name}}.bin
 
 st-flash: build-bin
-	st-flash write bin/{{project-name}}.bin 0x08000000
+	st-flash write bin/{{project_name}}.bin 0x08000000
 
 stm32pcli-display-protection:
 	STM32_Programmer -c port=usb1 -ob displ

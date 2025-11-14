@@ -9,7 +9,7 @@ fn write_version_file() {
 	let git_revision_len = revision.len().min(10);
 	git_revision_bytes[..git_revision_len].copy_from_slice(&revision.as_bytes()[..git_revision_len]);
 	let dirty = git_version == "unknown" || !modified.is_empty();
-	let product_description = format!("{{project-name}} ({git_version})");
+	let product_description = format!("{{project_name}} ({git_version})");
 	let pkg_version_major = env::var("CARGO_PKG_VERSION_MAJOR").unwrap().parse::<u8>().unwrap();
 	let pkg_version_minor = env::var("CARGO_PKG_VERSION_MINOR").unwrap().parse::<u8>().unwrap();
 	let pkg_version_patch = env::var("CARGO_PKG_VERSION_PATCH").unwrap().parse::<u8>().unwrap();

@@ -8,6 +8,7 @@ pub enum Outgoing {
 }
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Incoming {
 	Reset,
 	ExampleMessage,

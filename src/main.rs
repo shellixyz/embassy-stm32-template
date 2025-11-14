@@ -21,6 +21,9 @@ use embassy_executor::Spawner;
 use embassy_futures::yield_now;
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, channel};
 use embassy_time::{Duration, Timer};
+#[cfg(not(feature = "defmt"))]
+use panic_halt as _;
+#[cfg(feature = "defmt")]
 use panic_probe as _;
 
 pub type Channel<T, const N: usize> = channel::Channel<CriticalSectionRawMutex, T, N>;

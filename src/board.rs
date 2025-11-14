@@ -1,5 +1,4 @@
 use cfg_if::cfg_if;
-use defmt::Format;
 {%- if usb_support == "true" %}
 #[cfg(feature = "usb")]
 use embassy_stm32::usb;
@@ -57,7 +56,8 @@ cfg_if! {
 	}
 }
 {% endif %}
-#[derive(Debug, Clone, Copy, PartialEq, CopyGetters, Format)]
+#[derive(Debug, Clone, Copy, PartialEq, CopyGetters)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Config {}
 
 pub struct Peripherals {

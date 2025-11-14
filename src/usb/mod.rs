@@ -1,45 +1,86 @@
-use core::sync::atomic::AtomicBool;
+use core::sync::atomic::{self, AtomicBool};
 
 use derive_more::IsVariant;
+use embassy_executor::Spawner;
+use embassy_sync::channel;
 use embassy_time::{Duration, TimeoutError, with_timeout};
 use embassy_usb::driver::EndpointError;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-	Channel, ChannelReceiver, ChannelSender,
-	board::CdcAcmSender,
-	usb::messages::{ConnectedDeviceToFirmware, FirmwareToConnectedDevice},
+	ChannelReceiver, ChannelSender,
+	board::{CdcAcmClass, CdcAcmSender, UsbDevice},
 };
 
 pub mod messages;
 pub mod tasks;
 
 const CHANNEL_LEN: usize = 5;
-pub type TxChannelTx = ChannelSender<FirmwareToConnectedDevice, CHANNEL_LEN>;
-pub type RxChannelRx = ChannelReceiver<ConnectedDeviceToFirmware, CHANNEL_LEN>;
-type TxChannelRx = ChannelReceiver<FirmwareToConnectedDevice, CHANNEL_LEN>;
-type RxChannelTx = ChannelSender<ConnectedDeviceToFirmware, CHANNEL_LEN>;
-static mut TX_CHANNEL: Channel<FirmwareToConnectedDevice, CHANNEL_LEN> = Channel::new();
-static mut RX_CHANNEL: Channel<ConnectedDeviceToFirmware, CHANNEL_LEN> = Channel::new();
+const SEND_PACKET_TIMEOUT: Duration = Duration::from_millis(50);
 
-static SEND_RESET_ACK: AtomicBool = AtomicBool::new(false);
+type OutgoingChannelTx = ChannelSender<messages::Outgoing, CHANNEL_LEN>;
+type OutgoingChannelRx = ChannelReceiver<messages::Outgoing, CHANNEL_LEN>;
+type IncomingChannelRx = ChannelReceiver<messages::Incoming, CHANNEL_LEN>;
+type IncomingChannelTx = ChannelSender<messages::Incoming, CHANNEL_LEN>;
+
+static mut OUTGOING_CHANNEL: crate::Channel<messages::Outgoing, CHANNEL_LEN> = crate::Channel::new();
+static mut INCOMING_CHANNEL: crate::Channel<messages::Incoming, CHANNEL_LEN> = crate::Channel::new();
+
+static IS_RESET_ACK: AtomicBool = AtomicBool::new(false);
+static REQUESTING_RESET: AtomicBool = AtomicBool::new(false);
 static CONNECTED: AtomicBool = AtomicBool::new(false);
 
-pub fn tx_channel_endpoints() -> (TxChannelRx, TxChannelTx) {
-	unsafe { (TX_CHANNEL.receiver(), TX_CHANNEL.sender()) }
+pub struct Channel {
+	outgoing_tx: OutgoingChannelTx,
+	incoming_rx: IncomingChannelRx,
 }
 
-pub fn rx_channel_endpoints() -> (RxChannelTx, RxChannelRx) {
-	unsafe { (RX_CHANNEL.sender(), RX_CHANNEL.receiver()) }
+impl Channel {
+	pub fn try_send(&self, message: messages::Outgoing) -> Result<(), channel::TrySendError<messages::Outgoing>> {
+		self.outgoing_tx.try_send(message)
+	}
+
+	pub fn try_receive(&self) -> Result<messages::Incoming, channel::TryReceiveError> {
+		self.incoming_rx.try_receive()
+	}
 }
 
-pub fn send_reset_ack() {
-	SEND_RESET_ACK.store(true, core::sync::atomic::Ordering::SeqCst);
+fn outgoing_channel_endpoints() -> (OutgoingChannelRx, OutgoingChannelTx) {
+	unsafe { (OUTGOING_CHANNEL.receiver(), OUTGOING_CHANNEL.sender()) }
+}
+
+fn incoming_channel_endpoints() -> (IncomingChannelTx, IncomingChannelRx) {
+	unsafe { (INCOMING_CHANNEL.sender(), INCOMING_CHANNEL.receiver()) }
+}
+
+pub fn spawn_tasks(spawner: &Spawner, usb_device: UsbDevice, cdc_acm: CdcAcmClass) -> Channel {
+	let (outgoing_rx, outgoing_tx) = outgoing_channel_endpoints();
+	let (incoming_tx, incoming_rx) = incoming_channel_endpoints();
+
+	spawner.must_spawn(tasks::driver(usb_device));
+
+	let (cdc_acm_sender, cdc_acm_receiver) = cdc_acm.split();
+	spawner.must_spawn(tasks::handle_rx(cdc_acm_receiver, incoming_tx));
+	spawner.must_spawn(tasks::handle_tx(cdc_acm_sender, outgoing_rx));
+
+	Channel {
+		outgoing_tx,
+		incoming_rx,
+	}
+}
+
+pub fn reset_ack() -> messages::Outgoing {
+	IS_RESET_ACK.store(true, atomic::Ordering::SeqCst);
+	messages::Outgoing::Acknowledgement
+}
+
+pub fn is_requesting_reset() -> bool {
+	REQUESTING_RESET.load(atomic::Ordering::SeqCst)
 }
 
 async fn send_packet(cdc_acm_sender: &mut CdcAcmSender, packet: &[u8]) -> Result<(), EndpointError> {
 	for data in packet.chunks(64) {
-		match with_timeout(Duration::from_millis(50), cdc_acm_sender.write_packet(data)).await {
+		match with_timeout(SEND_PACKET_TIMEOUT, cdc_acm_sender.write_packet(data)).await {
 			Ok(result) => result?,
 			Err(TimeoutError) => break,
 		}

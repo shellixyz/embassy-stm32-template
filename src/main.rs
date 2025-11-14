@@ -9,16 +9,12 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
-mod board;
-
 {%- if usb_support == "true" %}
 #[cfg(feature = "usb")]
 mod usb;
 {%- endif %}
 
-include!(concat!(env!("OUT_DIR"), "/version.rs"));
-
-use core::sync::atomic::AtomicBool;
+use core::sync::atomic::{self, AtomicBool};
 
 use defmt_rtt as _;
 use embassy_executor::Spawner;
@@ -33,9 +29,7 @@ pub type ChannelSender<T, const N: usize> = channel::Sender<'static, CriticalSec
 
 pub const CONFIG: board::Config = board::Config {};
 
-{%- if usb_support == "true" %}
-static DO_RESET: AtomicBool = AtomicBool::new(false);
-{%- endif %}
+include!(concat!(env!("OUT_DIR"), "/version.rs"));
 
 struct RuntimeData {
 	// Add fields as needed
@@ -43,31 +37,27 @@ struct RuntimeData {
 
 {%- if usb_support == "true" %}
 #[cfg(feature = "usb")]
-fn handle_messages_from_usb(
-	tuner_to_firmware_rx: &usb::RxChannelRx,
-	firmware_main_to_tuner_tx: &usb::TxChannelTx,
-	runtime_data: &mut RuntimeData,
-) {
-	if let Ok(message) = tuner_to_firmware_rx.try_receive() {
-		// defmt::info!("main got message: {:?}", message);
-		use usb::messages::{
-			ConnectedDeviceToFirmware as IncomingMessage, FirmwareToConnectedDevice as OutgoingMessage,
-		};
+async fn handle_message_from_usb(usb_channel: &usb::Channel, runtime_data: &mut RuntimeData) {
+	if let Ok(message) = usb_channel.try_receive() {
+		defmt::info!("USB: got message: {:?}", message);
+		use usb::messages::{Incoming as IncomingMessage, Outgoing as OutgoingMessage};
 		let response = match message {
 			IncomingMessage::Reset => {
-				defmt::info!("Received Reset command from USB device");
-				usb::send_reset_ack();
-				OutgoingMessage::Acknowledgement
+				usb::reset_ack()
 			},
 			IncomingMessage::ExampleMessage => {
-				defmt::info!("Received ExampleMessage from USB device");
-				usb::send_reset_ack();
 				OutgoingMessage::Acknowledgement
 			},
 		};
-		if let Err(e) = firmware_main_to_tuner_tx.try_send(response) {
-			defmt::error!("Failed to send response: {:?}", e);
+		if let Err(e) = usb_channel.try_send(response) {
+			defmt::error!("USB: failed to send response: {:?}", e);
 		}
+	}
+
+	if usb::is_requesting_reset() {
+		defmt::info!("Resetting device");
+		Timer::after_millis(100).await; // Give time for the USB driver to finish sending any pending data
+		cortex_m::peripheral::SCB::sys_reset();
 	}
 }
 {%- endif %}
@@ -86,20 +76,7 @@ async fn main(spawner: Spawner) {
 
 {%- if usb_support == "true" %}
 	#[cfg(feature = "usb")]
-	let (firmware_to_connected_device_rx, firmware_to_connected_device_tx) = usb::tx_channel_endpoints();
-	#[cfg(feature = "usb")]
-	let (connected_device_to_firmware_tx, connected_device_to_firmware_rx) = usb::rx_channel_endpoints();
-
-	#[cfg(feature = "usb")]
-	{
-		spawner.must_spawn(usb::tasks::driver(p.usb));
-
-		let (cdc_acm_sender, cdc_acm_receiver) = p.cdc_acm.split();
-		spawner.must_spawn(usb::tasks::handle_rx(cdc_acm_receiver, connected_device_to_firmware_tx));
-		spawner.must_spawn(usb::tasks::handle_tx(cdc_acm_sender, firmware_to_connected_device_rx));
-	}
-
-	Timer::after_secs(2).await;
+	let usb_channel = usb::spawn_tasks(&spawner, p.usb, p.cdc_acm);
 {%- endif %}
 
 	if let Some(wdg) = &mut p.wdg {
@@ -114,18 +91,8 @@ async fn main(spawner: Spawner) {
 		}
 
 {%- if usb_support == "true" %}
-		if DO_RESET.load(core::sync::atomic::Ordering::SeqCst) {
-			defmt::info!("Resetting device");
-			Timer::after_millis(100).await; // Give time for the USB driver to finish sending any pending data
-			cortex_m::peripheral::SCB::sys_reset();
-		}
-
 		#[cfg(feature = "usb")]
-		handle_messages_from_usb(
-			&connected_device_to_firmware_rx,
-			&firmware_to_connected_device_tx,
-			&mut runtime_data,
-		);
+		handle_message_from_usb(&usb_channel, &mut runtime_data).await;
 {%- endif %}
 
 		defmt::info!("Hello from main loop");

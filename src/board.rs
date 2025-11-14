@@ -23,8 +23,7 @@ pub type ActiveHighInput<'a> = Input<'a, switch_hal::ActiveHigh>;
 
 pub type Flash<'a> = embassy_stm32::flash::Flash<'a, embassy_stm32::flash::Blocking>;
 pub type WDG = IndependentWatchdog<'static, peripherals::IWDG>;
-
-{%- if usb_support == "true" %}
+{% if usb_support == "true" %}
 #[cfg(feature = "usb")]
 bind_interrupts!(struct Irqs {
 {%- if usb_type == "USB_LP" %}
@@ -36,15 +35,13 @@ bind_interrupts!(struct Irqs {
 
 cfg_if! {
 	if #[cfg(feature = "usb")] {
-{%- if usb_support == "true" %}
-{%- if usb_type == "USB_LP" %}
+		{%- if usb_type == "USB_LP" %}
 		pub type UsbDriver = usb::Driver<'static, peripherals::USB>;
 		pub type UsbPeripheral = peripherals::USB;
-{%- elsif usb_type == "OTG_FS" %}
+		{%- elsif usb_type == "OTG_FS" %}
 		pub type UsbDriver = usb::Driver<'static, peripherals::USB_OTG_FS>;
 		pub type UsbPeripheral = peripherals::USB_OTG_FS;
-{%- endif %}
-{%- endif %}
+		{%- endif %}
 		pub type UsbDevice = embassy_usb::UsbDevice<'static, UsbDriver>;
 		pub type CdcAcmClass = embassy_usb::class::cdc_acm::CdcAcmClass<'static, UsbDriver>;
 		pub type CdcAcmSender = embassy_usb::class::cdc_acm::Sender<'static, UsbDriver>;
@@ -54,26 +51,23 @@ cfg_if! {
 		static USB_CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
 		static USB_BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
 		static USB_CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
-{%- if usb_support == "true" %}
-{%- if usb_type == "OTG_FS" %}
+		{%- if usb_type == "OTG_FS" %}
 		static USB_EP_OUT_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
-{%- endif %}
-{%- endif %}
+		{%- endif %}
 	}
 }
-{%- endif %}
-
+{% endif %}
 #[derive(Debug, Clone, Copy, PartialEq, CopyGetters, Format)]
 pub struct Config {}
 
 pub struct Peripherals {
 	pub wdg: Option<WDG>,
-{%- if usb_support == "true" %}
+	{%- if usb_support == "true" %}
 	#[cfg(feature = "usb")]
 	pub cdc_acm: CdcAcmClass,
 	#[cfg(feature = "usb")]
 	pub usb: UsbDevice,
-{%- endif %}
+	{%- endif %}
 }
 
 fn set_clock_config(config: &mut embassy_stm32::Config) {
@@ -146,38 +140,35 @@ pub async fn init(config: Config, watchdog_timeout: Option<Duration>) -> Periphe
 	set_pins_as_output!(p, PA13, PA14);
 
 	let wdg = watchdog_timeout.map(|wdgt| IndependentWatchdog::new(p.IWDG, u32::try_from(wdgt.as_micros()).unwrap()));
-
-{%- if usb_support == "true" %}
+	{% if usb_support == "true" %}
 	#[cfg(feature = "usb")]
-{%- if usb_type == "USB_LP" %}
+	{%- if usb_type == "USB_LP" %}
 	let (usb, cdc_acm) = init_usb(p.USB, p.PA11, p.PA12);
-{%- elsif usb_type == "OTG_FS" %}
+	{%- elsif usb_type == "OTG_FS" %}
 	let (usb, cdc_acm) = init_usb(p.USB_OTG_FS, p.PA11, p.PA12);
-{%- endif %}
-{%- endif %}
-
+	{%- endif %}
+	{% endif %}
 	Peripherals {
 		wdg,
-{%- if usb_support == "true" %}
+		{%- if usb_support == "true" %}
 		#[cfg(feature = "usb")]
 		cdc_acm,
 		#[cfg(feature = "usb")]
 		usb,
-{%- endif %}
+		{%- endif %}
 	}
 }
-
-{%- if usb_support == "true" %}
+{% if usb_support == "true" %}
 #[cfg(feature = "usb")]
 fn init_usb(usb: UsbPeripheral, pa11: peripherals::PA11, pa12: peripherals::PA12) -> (UsbDevice, CdcAcmClass) {
-{%- if usb_type == "USB_LP" %}
+	{%- if usb_type == "USB_LP" %}
 	let driver = embassy_stm32::usb::Driver::new(usb, Irqs, pa12, pa11);
-{%- elsif usb_type == "OTG_FS" %}
+	{%- elsif usb_type == "OTG_FS" %}
 	let mut usb_config = usb::Config::default();
 	usb_config.vbus_detection = false;
 	let ep_out_buffer = USB_EP_OUT_BUFFER.init([0; 256]);
 	let driver = embassy_stm32::usb::Driver::new_fs(usb, Irqs, pa12, pa11, ep_out_buffer, usb_config);
-{%- endif %}
+	{%- endif %}
 
 	let mut config = embassy_usb::Config::new(0xC0DE, 0xCAFE);
 	config.manufacturer = Some("Shellixyz");
